@@ -1,15 +1,16 @@
 //SPDX-License-Identifier:MIT
 pragma solidity ^0.8.0;
 
+import {VRFConsumerBaseV2Plus} from "lib/chainlink-brownie-contracts/contracts/src/v0.8/dev/vrf/VRFConsumerBaseV2Plus.sol";
+import {VRFV2PlusClient} from "lib/chainlink-brownie-contracts/contracts/src/v0.8/dev/vrf/libraries/VRFV2PlusClient.sol";
+
 /*
     @title Raffle Contract
     @notice This contract is for creating a simple raffle
     @dev This implements a simple raffle contract with entrance fee and winner selection 
 */
 
-import {VRFConsumerBaseV2Plus} from "@chainlink/contracts/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
-
-contract Raffle{
+contract Raffle is VRFConsumerBaseV2Plus{
 
     //errors
     error Raffle__NotEnoughETH();
@@ -21,7 +22,7 @@ contract Raffle{
 
     event RaffleEntry(address indexed player);
 
-    constructor(uint256 entranceFee, uint256 interval){
+    constructor(uint256 entranceFee, uint256 interval, address vrfCoordinator) VRFConsumerBaseV2Plus(vrfCoordinator){
         i_entranceFee= entranceFee;
         s_lastTimestamp= block.timestamp;
         i_interval= interval;
@@ -41,8 +42,7 @@ contract Raffle{
             revert();
         }
 
-        requestId = s_vrfCoordinator.requestRandomWords(
-        VRFV2PlusClient.RandomWordsRequest({
+        VRFV2PlusClient.RandomWordsRequest request= VRFV2PlusClient.RandomWordsRequest({
             keyHash: s_keyHash,
             subId: s_subscriptionId,
             requestConfirmations: requestConfirmations,
@@ -52,8 +52,11 @@ contract Raffle{
                 // Set nativePayment to true to pay for VRF requests with Sepolia ETH instead of LINK
                 VRFV2PlusClient.ExtraArgsV1({nativePayment: false})
             )
-        })
-    );
+        });
+
+        uint256 requestId = s_vrfCoordinator.requestRandomWords(
+            request
+        );
 
     }
 
