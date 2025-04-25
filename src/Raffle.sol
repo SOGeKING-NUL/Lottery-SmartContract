@@ -48,8 +48,7 @@ contract Raffle is VRFConsumerBaseV2Plus{
             requestConfirmations: requestConfirmations,
             callbackGasLimit: callbackGasLimit,
             numWords: numWords,
-            extraArgs: VRFV2PlusClient._argsToBytes(
-                // Set nativePayment to true to pay for VRF requests with Sepolia ETH instead of LINK
+            extraArgs: VRFV2PlusClient._argsToBytes( 
                 VRFV2PlusClient.ExtraArgsV1({nativePayment: false})
             )
         });
