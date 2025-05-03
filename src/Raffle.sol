@@ -15,17 +15,25 @@ contract Raffle is VRFConsumerBaseV2Plus{
     //errors
     error Raffle__NotEnoughETH();
 
+    uint256 private constant REQUEST_CONFIRMATIONS= 3;
+    uint32 private constant NUM_WORDS= 1;
     uint256 private immutable i_entranceFee;
     uint256 private s_lastTimestamp;
+    uint32 private immutable i_callbackGasLimit;
     uint256 private immutable i_interval;
+    uint256 private immutable i_subscriptionId;
+    bytes32 private immutable i_keyHash;
     address payable[] private s_players; 
 
     event RaffleEntry(address indexed player);
 
-    constructor(uint256 entranceFee, uint256 interval, address vrfCoordinator) VRFConsumerBaseV2Plus(vrfCoordinator){
+    constructor(uint256 entranceFee, uint256 interval, address vrfCoordinator, bytes32 gasLane, uint256 subscriptionId, uint32 callbackGasLimti) VRFConsumerBaseV2Plus(vrfCoordinator){
         i_entranceFee= entranceFee;
         s_lastTimestamp= block.timestamp;
         i_interval= interval;
+        i_keyHash= gasLane;
+        i_subscriptionId= subscriptionId;
+        i_callbackGasLimit= callbackGasLimti;
 
     }
 
@@ -43,11 +51,11 @@ contract Raffle is VRFConsumerBaseV2Plus{
         }
 
         VRFV2PlusClient.RandomWordsRequest request= VRFV2PlusClient.RandomWordsRequest({
-            keyHash: s_keyHash,
-            subId: s_subscriptionId,
-            requestConfirmations: requestConfirmations,
-            callbackGasLimit: callbackGasLimit,
-            numWords: numWords,
+            keyHash: i_keyHash,
+            subId: i_subscriptionId,
+            requestConfirmations: REQUEST_CONFIRMATIONS,
+            callbackGasLimit: i_callbackGasLimit,
+            numWords: NUM_WORDS,
             extraArgs: VRFV2PlusClient._argsToBytes( 
                 VRFV2PlusClient.ExtraArgsV1({nativePayment: false})
             )
