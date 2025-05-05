@@ -14,8 +14,18 @@ contract Raffle is VRFConsumerBaseV2Plus{
 
     //errors
     error Raffle__NotEnoughETH();
+    error Raffle_TransferFailed();
 
-    uint256 private constant REQUEST_CONFIRMATIONS= 3;
+    //emits
+    event WinnerPicked(address indexed winner);
+
+    //type Declarations
+    enum RaffleState{
+        OPEN,
+        CALCULATING
+    }
+
+    uint16 private constant REQUEST_CONFIRMATIONS= 3;
     uint32 private constant NUM_WORDS= 1;
     uint256 private immutable i_entranceFee;
     uint256 private s_lastTimestamp;
@@ -24,6 +34,8 @@ contract Raffle is VRFConsumerBaseV2Plus{
     uint256 private immutable i_subscriptionId;
     bytes32 private immutable i_keyHash;
     address payable[] private s_players; 
+    address private s_recentWinner;
+    RaffleState private s_raffleState;
 
     event RaffleEntry(address indexed player);
 
@@ -33,7 +45,9 @@ contract Raffle is VRFConsumerBaseV2Plus{
         i_interval= interval;
         i_keyHash= gasLane;
         i_subscriptionId= subscriptionId;
+
         i_callbackGasLimit= callbackGasLimti;
+        s_raffleState= RaffleState.OPEN;
 
     }
 
@@ -49,8 +63,11 @@ contract Raffle is VRFConsumerBaseV2Plus{
         if((block.timestamp - s_lastTimestamp) < i_interval){
             revert();
         }
-
-        VRFV2PlusClient.RandomWordsRequest request= VRFV2PlusClient.RandomWordsRequest({
+        if(s_raffleState != RaffleState.OPEN){
+            revert();
+        }
+        s_raffleState= RaffleState.CALCULATING;
+        VRFV2PlusClient.RandomWordsRequest memory request= VRFV2PlusClient.RandomWordsRequest({
             keyHash: i_keyHash,
             subId: i_subscriptionId,
             requestConfirmations: REQUEST_CONFIRMATIONS,
@@ -64,7 +81,23 @@ contract Raffle is VRFConsumerBaseV2Plus{
         uint256 requestId = s_vrfCoordinator.requestRandomWords(
             request
         );
+    }
 
+    function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal override{
+        //we are finding winner index by randomNumber % numberOfPlayers
+        uint256 winnerIndex= randomWords[0] % s_players.length;
+        address payable recentWinner = s_players[winnerIndex];
+        s_recentWinner= recentWinner;
+        s_raffleState= RaffleState.OPEN;
+        s_players= new address payable[](0);
+        s_lastTimestamp= block.timestamp;
+
+        (bool success, ) = recentWinner.call{value: address(this).balance}("");
+        if (!success){
+            revert Raffle_TransferFailed();
+        }  
+
+        emit WinnerPicked(recentWinner);      
     }
 
     //getters
