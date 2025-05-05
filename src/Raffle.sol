@@ -1,5 +1,5 @@
 //SPDX-License-Identifier:MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.18;
 
 import {VRFConsumerBaseV2Plus} from "lib/chainlink-brownie-contracts/contracts/src/v0.8/dev/vrf/VRFConsumerBaseV2Plus.sol";
 import {VRFV2PlusClient} from "lib/chainlink-brownie-contracts/contracts/src/v0.8/dev/vrf/libraries/VRFV2PlusClient.sol";
@@ -40,16 +40,22 @@ contract Raffle is VRFConsumerBaseV2Plus{
 
     event RaffleEntry(address indexed player);
 
-    constructor(uint256 entranceFee, uint256 interval, address vrfCoordinator, bytes32 gasLane, uint256 subscriptionId, uint32 callbackGasLimti) VRFConsumerBaseV2Plus(vrfCoordinator){
+    constructor(
+        uint256 entranceFee, 
+        uint256 interval, 
+        address vrfCoordinator, 
+        bytes32 gasLane, 
+        uint256 subscriptionId, 
+        uint32 callbackGasLimit) VRFConsumerBaseV2Plus(vrfCoordinator){
+
         i_entranceFee= entranceFee;
         s_lastTimestamp= block.timestamp;
         i_interval= interval;
         i_keyHash= gasLane;
         i_subscriptionId= subscriptionId;
-
-        i_callbackGasLimit= callbackGasLimti;
+        i_callbackGasLimit= callbackGasLimit;
+        
         s_raffleState= RaffleState.OPEN;
-
     }
 
     function enterRaffle() public payable{
