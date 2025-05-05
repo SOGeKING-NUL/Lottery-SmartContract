@@ -15,6 +15,7 @@ contract Raffle is VRFConsumerBaseV2Plus{
     //errors
     error Raffle__NotEnoughETH();
     error Raffle_TransferFailed();
+    error Raffle_UpkeepNotNeeded(uint256 currentState, uint256 balance, uint256 numPlayers);
 
     //emits
     event WinnerPicked(address indexed winner);
@@ -59,12 +60,34 @@ contract Raffle is VRFConsumerBaseV2Plus{
         emit RaffleEntry(msg.sender);
     }
 
-    function pickWinner() public payable{
-        if((block.timestamp - s_lastTimestamp) < i_interval){
-            revert();
-        }
-        if(s_raffleState != RaffleState.OPEN){
-            revert();
+    /*
+    When should the Winner be picked?
+
+    *@dev this is the fucntoin the chainlink node will call to see if lottery is ready to be picked
+    *@dev The winner will be picked when:
+    *1. When the time interval has passed
+    *2. Lottery is open
+    *3.The contract has ETH
+    *4. The contract has players
+    *4. Implicitly, your subscription has LINK
+    *@params- ignored
+    *@return upkeepNeeded - Trure if its time to restartthe Lottery
+    *@return- ignored
+    */
+
+   function checkUpkeep(bytes memory /* checkData */) public view returns (bool upkeepNeeded, bytes memory /* performData */){
+        bool timePassed= ((block.timestamp - s_lastTimestamp) > i_interval);
+        bool isOpen= (RaffleState.OPEN == s_raffleState);
+        bool hasBalance= (address(this).balance > 0);
+        bool hasPlayers= (s_players.length > 0);
+        upkeepNeeded= isOpen && timePassed && hasPlayers && hasBalance;
+        return(upkeepNeeded, "");
+   }
+
+    function performUpkeep() public payable{
+        (bool upkeepNeeded, )= checkUpkeep("");
+        if(!upkeepNeeded){
+            revert Raffle_UpkeepNotNeeded(uint256(s_raffleState), address(this).balance, s_players.length);
         }
         s_raffleState= RaffleState.CALCULATING;
         VRFV2PlusClient.RandomWordsRequest memory request= VRFV2PlusClient.RandomWordsRequest({
