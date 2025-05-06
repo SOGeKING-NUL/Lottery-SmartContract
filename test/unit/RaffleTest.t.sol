@@ -10,7 +10,7 @@ contract RaffleTest is Test{
 
     //events
     event WinnerPicked(address indexed winner);
-    event RaffleEnter(address indexed player);
+    event RaffleEntry(address indexed player);
 
     Raffle public raffle;
     HelperConfig public helperConfig;
@@ -56,11 +56,11 @@ contract RaffleTest is Test{
 
     function testEmitsEventOnEntrance() public {
     // Arrange
-    vm.prank(PLAYER);
+    vm.expectEmit(true, false, false, false, address(raffle));
+    emit RaffleEntry(PLAYER);
 
     // Act / Assert
-    vm.expectEmit(true, false, false, false, address(raffle));
-    emit RaffleEnter(PLAYER);
+    vm.prank(PLAYER);
     raffle.enterRaffle{value: entranceFee}();
     }
 
