@@ -14,12 +14,14 @@ contract Raffle is VRFConsumerBaseV2Plus{
 
     //errors
     error Raffle__NotEnoughETH();
-    error Raffle_TransferFailed();
+    error Raffle__TransferFailed();
     error Raffle__RaffleNotOpen();
-    error Raffle_UpkeepNotNeeded(uint256 currentState, uint256 balance, uint256 numPlayers);
+    error Raffle__UpkeepNotNeeded(uint256 currentState, uint256 balance, uint256 numPlayers);
 
     //events
     event WinnerPicked(address indexed winner);
+    event RequestedRaffleWinner(uint256 indexed requestId);
+
 
     //type Declarations
     enum RaffleState{
@@ -70,7 +72,7 @@ contract Raffle is VRFConsumerBaseV2Plus{
         if(msg.value < i_entranceFee){
             revert Raffle__NotEnoughETH();
         }
-        
+
         s_players.push(payable(msg.sender));
         emit RaffleEntry(msg.sender);
     }
@@ -102,7 +104,7 @@ contract Raffle is VRFConsumerBaseV2Plus{
     function performUpkeep() public payable{
         (bool upkeepNeeded, )= checkUpkeep("");
         if(!upkeepNeeded){
-            revert Raffle_UpkeepNotNeeded(uint256(s_raffleState), address(this).balance, s_players.length);
+            revert Raffle__UpkeepNotNeeded(uint256(s_raffleState), address(this).balance, s_players.length);
         }
         s_raffleState= RaffleState.CALCULATING;
         
@@ -120,6 +122,8 @@ contract Raffle is VRFConsumerBaseV2Plus{
         uint256 requestId = s_vrfCoordinator.requestRandomWords(
             request
         );
+
+        emit RequestedRaffleWinner(requestId);
     }
 
     function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal override{
@@ -133,7 +137,7 @@ contract Raffle is VRFConsumerBaseV2Plus{
 
         (bool success, ) = recentWinner.call{value: address(this).balance}("");
         if (!success){
-            revert Raffle_TransferFailed();
+            revert Raffle__TransferFailed();
         }  
 
         emit WinnerPicked(recentWinner);      
@@ -145,11 +149,19 @@ contract Raffle is VRFConsumerBaseV2Plus{
         return i_entranceFee;
     }
 
+    function getLastTimeStamp() public view returns(uint256){
+        return s_lastTimestamp;
+    }
+
     function getRaffleState() public view returns(RaffleState){
         return s_raffleState;
     }
 
     function getPlayer(uint256 playerIndex) public view returns(address){
         return s_players[playerIndex];
+    }
+
+    function getRecentWinner() public view returns(address){
+        return s_recentWinner;
     }
 }
