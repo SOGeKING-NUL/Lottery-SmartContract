@@ -8,7 +8,9 @@ import {CreateSubscription, FundSubscription, AddConsumer} from "./Interactions.
 
 contract DeployRaffle is Script{
 
-    function run() public {}
+    function run() public {
+        deployContract();
+    }
 
     function deployContract() public  returns(Raffle, HelperConfig){
         HelperConfig helperConfig= new HelperConfig();
