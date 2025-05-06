@@ -15,9 +15,10 @@ contract Raffle is VRFConsumerBaseV2Plus{
     //errors
     error Raffle__NotEnoughETH();
     error Raffle_TransferFailed();
+    error Raffle__RaffleNotOpen();
     error Raffle_UpkeepNotNeeded(uint256 currentState, uint256 balance, uint256 numPlayers);
 
-    //emits
+    //events
     event WinnerPicked(address indexed winner);
 
     //type Declarations
@@ -96,6 +97,7 @@ contract Raffle is VRFConsumerBaseV2Plus{
             revert Raffle_UpkeepNotNeeded(uint256(s_raffleState), address(this).balance, s_players.length);
         }
         s_raffleState= RaffleState.CALCULATING;
+        
         VRFV2PlusClient.RandomWordsRequest memory request= VRFV2PlusClient.RandomWordsRequest({
             keyHash: i_keyHash,
             subId: i_subscriptionId,
@@ -133,5 +135,13 @@ contract Raffle is VRFConsumerBaseV2Plus{
 
     function getEntranceFee() public view returns(uint256){
         return i_entranceFee;
+    }
+
+    function getRaffleState() public view returns(RaffleState){
+        return s_raffleState;
+    }
+
+    function getPlayer(uint256 playerIndex) public view returns(address){
+        return s_players[playerIndex];
     }
 }
