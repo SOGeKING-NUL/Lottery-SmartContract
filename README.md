@@ -10,7 +10,6 @@ Foundry consists of:
 -   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
 
 
-https://book.getfoundry.sh/
 
 ## Usage
 
